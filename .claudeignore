@@ -1,0 +1,47 @@
+# Virtual environment
+.venv/
+
+# Database files
+*.db
+*.sqlite
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Large binary files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.webp
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation / Notes (non-code)
+*.md
+*.txt
+!CLAUDE.md
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
