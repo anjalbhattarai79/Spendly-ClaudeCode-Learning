@@ -1,7 +1,12 @@
-from flask import Flask, render_template
-from database.db import init_db, seed_db
+import os
+import secrets
+import sqlite3
+from flask import Flask, render_template, request, redirect, url_for, session
+from werkzeug.security import generate_password_hash
+from database.db import init_db, seed_db, get_db
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 
 
 # ------------------------------------------------------------------ #
@@ -13,9 +18,52 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    return render_template("register.html")
+    if request.method == "GET":
+        # Generate simple CSRF token for form
+        csrf_token = secrets.token_hex(16)
+        return render_template("register.html", csrf_token=csrf_token)
+
+    # POST - handle registration
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+
+    # Validation
+    error = None
+    if not name:
+        error = "Full name is required"
+    elif not email or "@" not in email:
+        error = "Valid email is required"
+    elif len(password) < 8:
+        error = "Password must be at least 8 characters"
+
+    if error:
+        return render_template("register.html", error=error, csrf_token=secrets.token_hex(16)), 400
+
+    # Hash password
+    password_hash = generate_password_hash(password)
+
+    # Insert user
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+            (name, email, password_hash)
+        )
+        conn.commit()
+        user_id = cursor.lastrowid
+    except sqlite3.IntegrityError:
+        conn.close()
+        return render_template("register.html", error="Email already registered", csrf_token=secrets.token_hex(16)), 400
+    finally:
+        conn.close()
+
+    # Set session and redirect
+    session["user_id"] = user_id
+    return redirect(url_for("profile"))
 
 
 @app.route("/login")
@@ -39,7 +87,8 @@ def privacy():
 
 @app.route("/logout")
 def logout():
-    return "Logout — coming in Step 3"
+    session.clear()
+    return redirect(url_for("landing"))
 
 
 @app.route("/profile")
