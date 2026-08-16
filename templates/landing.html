@@ -6,60 +6,97 @@
 
 <section class="hero">
     <div class="hero-inner">
-        <div class="hero-badge">Personal Finance Tracker</div>
+        <div class="hero-badge">
+            <span class="badge-dot" aria-hidden="true"></span>
+            Free to use · No credit card needed
+        </div>
         <h1 class="hero-title">
-            Know where your<br>
-            <em>money goes</em>
+            Track every rupee.<br>
+            <span class="hero-title-accent">Know where it goes.</span>
         </h1>
         <p class="hero-subtitle">
-            Log expenses, understand your spending patterns,
-            and take control of your financial life —
-            one transaction at a time.
+            Log expenses in seconds. See exactly where<br>
+            your money goes every month.
         </p>
         <div class="hero-actions">
             <a href="{{ url_for('register') }}" class="btn-primary">Start tracking free</a>
-            <a href="{{ url_for('login') }}" class="btn-ghost">Sign in</a>
+            <button type="button" class="btn-primary btn-modal-trigger" data-modal="demo-modal">See how it works</button>
         </div>
     </div>
     <div class="hero-visual">
-        <div class="mock-card">
-            <div class="mock-card-header">
-                <span class="mock-label">March 2026</span>
-                <span class="mock-total">₹12,450</span>
+        <div class="app-frame">
+            <div class="app-frame-header">
+                <div class="traffic-lights">
+                    <span class="traffic-light traffic-close" aria-hidden="true"></span>
+                    <span class="traffic-light traffic-minimize" aria-hidden="true"></span>
+                    <span class="traffic-light traffic-maximize" aria-hidden="true"></span>
+                </div>
             </div>
-            <div class="mock-bars">
-                <div class="mock-bar-row">
-                    <span class="mock-cat">Bills</span>
-                    <div class="mock-bar-track">
-                        <div class="mock-bar" style="width: 72%"></div>
+            <div class="app-frame-content">
+                <div class="stat-cards">
+                    <div class="stat-card">
+                        <span class="stat-value">₹12,450</span>
+                        <span class="stat-label">Total Spent</span>
                     </div>
-                    <span class="mock-amt">₹4,500</span>
+                    <div class="stat-card">
+                        <span class="stat-value">24</span>
+                        <span class="stat-label">Transactions</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value">₹3,200</span>
+                        <span class="stat-label">This Week</span>
+                    </div>
                 </div>
-                <div class="mock-bar-row">
-                    <span class="mock-cat">Food</span>
-                    <div class="mock-bar-track">
-                        <div class="mock-bar mock-bar-2" style="width: 52%"></div>
+                <div class="category-chart">
+                    <div class="chart-bar">
+                        <div class="chart-bar-fill" style="--bar-height: 72%; --bar-color: var(--accent);" aria-label="Bills: 72%"></div>
+                        <span class="chart-bar-label">Bills</span>
+                        <span class="chart-bar-value">₹4,500</span>
                     </div>
-                    <span class="mock-amt">₹3,200</span>
-                </div>
-                <div class="mock-bar-row">
-                    <span class="mock-cat">Health</span>
-                    <div class="mock-bar-track">
-                        <div class="mock-bar mock-bar-3" style="width: 33%"></div>
+                    <div class="chart-bar">
+                        <div class="chart-bar-fill" style="--bar-height: 52%; --bar-color: var(--accent-2);" aria-label="Food: 52%"></div>
+                        <span class="chart-bar-label">Food</span>
+                        <span class="chart-bar-value">₹3,200</span>
                     </div>
-                    <span class="mock-amt">₹2,050</span>
-                </div>
-                <div class="mock-bar-row">
-                    <span class="mock-cat">Transport</span>
-                    <div class="mock-bar-track">
-                        <div class="mock-bar mock-bar-4" style="width: 28%"></div>
+                    <div class="chart-bar">
+                        <div class="chart-bar-fill" style="--bar-height: 33%; --bar-color: #5b7fa6;" aria-label="Health: 33%"></div>
+                        <span class="chart-bar-label">Health</span>
+                        <span class="chart-bar-value">₹2,050</span>
                     </div>
-                    <span class="mock-amt">₹1,800</span>
+                    <div class="chart-bar">
+                        <div class="chart-bar-fill" style="--bar-height: 28%; --bar-color: #8b5e83;" aria-label="Transport: 28%"></div>
+                        <span class="chart-bar-label">Transport</span>
+                        <span class="chart-bar-value">₹1,800</span>
+                    </div>
+                    <div class="chart-bar">
+                        <div class="chart-bar-fill" style="--bar-height: 15%; --bar-color: #c17f24;" aria-label="Other: 15%"></div>
+                        <span class="chart-bar-label">Other</span>
+                        <span class="chart-bar-value">₹900</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
+
+<!-- Demo Modal -->
+<div class="modal-overlay" id="demo-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div class="modal-container">
+        <button class="modal-close" type="button" aria-label="Close modal">&times;</button>
+        <div class="modal-content">
+            <h2 id="modal-title" class="modal-title">See how Spendly works</h2>
+            <div class="modal-video-wrapper">
+                <iframe
+                    class="modal-video"
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1"
+                    title="Spendly demo video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </div>
+    </div>
+</div>
 
 <section class="features">
     <div class="features-inner">
