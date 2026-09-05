@@ -66,9 +66,41 @@ def register():
     return redirect(url_for("profile"))
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    return render_template("login.html")
+    if request.method == "GET":
+        return render_template("login.html")
+
+    # POST - handle login
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+
+    error = None
+    if not email or "@" not in email:
+        error = "Valid email is required"
+    elif not password:
+        error = "Password is required"
+
+    if error:
+        return render_template("login.html", error=error), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, password_hash FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+    finally:
+        conn.close()
+
+    if not user:
+        return render_template("login.html", error="Invalid email or password"), 401
+
+    from werkzeug.security import check_password_hash
+    if not check_password_hash(user["password_hash"], password):
+        return render_template("login.html", error="Invalid email or password"), 401
+
+    session["user_id"] = user["id"]
+    return redirect(url_for("profile"))
 
 
 @app.route("/terms")
@@ -93,7 +125,67 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    # Check authentication
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    try:
+        # Get user info
+        cursor.execute("SELECT id, name, email, created_at FROM users WHERE id = ?", (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            session.clear()
+            return redirect(url_for("login"))
+
+        # Get total spending
+        cursor.execute("SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ?", (user_id,))
+        total_spent = cursor.fetchone()[0]
+
+        # Get transaction count
+        cursor.execute("SELECT COUNT(*) FROM expenses WHERE user_id = ?", (user_id,))
+        expense_count = cursor.fetchone()[0]
+
+        # Get category breakdown
+        cursor.execute(
+            "SELECT category, SUM(amount) as total FROM expenses WHERE user_id = ? GROUP BY category ORDER BY total DESC",
+            (user_id,)
+        )
+        categories_raw = cursor.fetchall()
+
+        # Calculate percentages for each category
+        categories = []
+        for cat in categories_raw:
+            percentage = (cat["total"] / total_spent * 100) if total_spent > 0 else 0
+            categories.append({
+                "category": cat["category"],
+                "total": cat["total"],
+                "percentage": round(percentage)
+            })
+
+        # Get this month's spending
+        from datetime import datetime
+        current_month = datetime.now().strftime("%Y-%m")
+        cursor.execute(
+            "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND date LIKE ?",
+            (user_id, f"{current_month}%")
+        )
+        this_month = cursor.fetchone()[0]
+
+    finally:
+        conn.close()
+
+    return render_template(
+        "profile.html",
+        user=user,
+        total_spent=total_spent,
+        expense_count=expense_count,
+        categories=categories,
+        this_month=this_month
+    )
 
 
 @app.route("/expenses/add")

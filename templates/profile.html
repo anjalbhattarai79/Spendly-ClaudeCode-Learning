@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Profile — Spendly{% endblock %}
+
+{% block content %}
+
+<section class="auth-section">
+    <div class="auth-container">
+
+        <!-- User Header -->
+        <div class="auth-card profile-header">
+            <div class="profile-avatar">
+                <span>{{ user["name"][0].upper() }}</span>
+            </div>
+            <h1 class="auth-title">{{ user["name"] }}</h1>
+            <p class="auth-subtitle">{{ user["email"] }}</p>
+            <p class="profile-member-since">
+                Member since {{ user["created_at"][:10] if user["created_at"] else "recently" }}
+            </p>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="profile-stats">
+            <div class="stat-card">
+                <span class="stat-value">₹{{ "{:,.2f}".format(total_spent) }}</span>
+                <span class="stat-label">Total Spent</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ expense_count }}</span>
+                <span class="stat-label">Transactions</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">₹{{ "{:,.2f}".format(this_month) }}</span>
+                <span class="stat-label">This Month</span>
+            </div>
+        </div>
+
+        <!-- Category Breakdown -->
+        {% if categories %}
+        <div class="auth-card profile-categories">
+            <h2 class="profile-section-title">Spending by Category</h2>
+
+            <div class="category-chart">
+                {% for cat in categories %}
+                <div class="chart-bar">
+                    <div class="chart-bar-fill"
+                         style="--bar-height: {{ cat.percentage }}%; --bar-color: var(--accent);"
+                         aria-label="{{ cat.category }}: {{ cat.percentage }}%"></div>
+                    <span class="chart-bar-label">{{ cat.category }}</span>
+                    <span class="chart-bar-value">₹{{ "{:,.2f}".format(cat.total) }} ({{ cat.percentage }}%)</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Category list for mobile / accessibility -->
+            <ul class="category-list">
+                {% for cat in categories %}
+                <li class="category-item">
+                    <span class="category-name">{{ cat.category }}</span>
+                    <span class="category-amount">₹{{ "{:,.2f}".format(cat.total) }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="auth-card profile-empty">
+            <div class="empty-icon">📊</div>
+            <h2 class="auth-title">No expenses yet</h2>
+            <p class="auth-subtitle">Start tracking your expenses to see your spending breakdown here.</p>
+            <a href="{{ url_for('add_expense') }}" class="btn-primary" style="margin-top: 1rem; display: inline-block;">
+                Add your first expense
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}
