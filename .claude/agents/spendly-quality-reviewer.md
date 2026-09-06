@@ -68,7 +68,7 @@ the project without a tour.
   `add_expense`)
 - Variable names are usually nouns
 
-**Why it matters**: good names mean you can read code 
+**Why it matters2**: good names mean you can read code 
 top-to-bottom and understand it without comments.
 
 ### 3. Flask Basics Done Right

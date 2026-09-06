@@ -19,6 +19,31 @@
             </p>
         </div>
 
+        <!-- Date Filter Form -->
+        <div class="auth-card profile-filter">
+            {% if error %}
+            <div class="auth-error">{{ error }}</div>
+            {% endif %}
+            <form method="GET" action="{{ url_for('profile') }}" class="filter-form">
+                <div class="filter-row">
+                    <div class="form-group">
+                        <label for="start_date">From</label>
+                        <input type="date" id="start_date" name="start_date" class="form-input" value="{{ start_date or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">To</label>
+                        <input type="date" id="end_date" name="end_date" class="form-input" value="{{ end_date or '' }}">
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filter</button>
+                    {% if filter_active %}
+                    <a href="{{ url_for('profile') }}" class="btn-ghost">Clear Filter</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
         <!-- Summary Stats -->
         <div class="profile-stats">
             <div class="stat-card">
@@ -31,7 +56,7 @@
             </div>
             <div class="stat-card">
                 <span class="stat-value">₹{{ "{:,.2f}".format(this_month) }}</span>
-                <span class="stat-label">This Month</span>
+                <span class="stat-label">{{ period_label }}</span>
             </div>
         </div>
 
