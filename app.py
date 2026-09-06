@@ -133,26 +133,108 @@ def profile():
     conn = get_db()
     cursor = conn.cursor()
 
-    try:
-        # Get user info
-        cursor.execute("SELECT id, name, email, created_at FROM users WHERE id = ?", (user_id,))
-        user = cursor.fetchone()
-        if not user:
-            session.clear()
-            return redirect(url_for("login"))
+    # Get user info first (needed for error cases)
+    cursor.execute("SELECT id, name, email, created_at FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    if not user:
+        conn.close()
+        session.clear()
+        return redirect(url_for("login"))
 
-        # Get total spending
-        cursor.execute("SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ?", (user_id,))
+    # Get and validate date filter parameters
+    from datetime import datetime
+    start_date = request.args.get("start_date", "").strip()
+    end_date = request.args.get("end_date", "").strip()
+
+    filter_active = False
+    period_label = "This Month"
+    date_filter_sql = ""
+    date_filter_params = []
+
+    # Default to current month if no filter provided
+    current_month = datetime.now().strftime("%Y-%m")
+
+    if start_date or end_date:
+        # Validate date format
+        try:
+            if start_date:
+                datetime.strptime(start_date, "%Y-%m-%d")
+            if end_date:
+                datetime.strptime(end_date, "%Y-%m-%d")
+        except ValueError:
+            conn.close()
+            return render_template(
+                "profile.html",
+                user=user,
+                total_spent=0,
+                expense_count=0,
+                categories=[],
+                this_month=0,
+                filter_active=False,
+                start_date=start_date,
+                end_date=end_date,
+                period_label="This Month",
+                error="Invalid date format. Use YYYY-MM-DD."
+            ), 400
+
+        # Validate start_date <= end_date
+        if start_date and end_date and start_date > end_date:
+            conn.close()
+            return render_template(
+                "profile.html",
+                user=user,
+                total_spent=0,
+                expense_count=0,
+                categories=[],
+                this_month=0,
+                filter_active=False,
+                start_date=start_date,
+                end_date=end_date,
+                period_label="This Month",
+                error="Start date must be before or equal to end date."
+            ), 400
+
+        filter_active = True
+        period_label = "Selected Period"
+
+        # Build WHERE clause for date filtering
+        if start_date and end_date:
+            date_filter_sql = " AND date BETWEEN ? AND ?"
+            date_filter_params = [start_date, end_date]
+        elif start_date:
+            date_filter_sql = " AND date >= ?"
+            date_filter_params = [start_date]
+        elif end_date:
+            date_filter_sql = " AND date <= ?"
+            date_filter_params = [end_date]
+    else:
+        # Default to current month
+        date_filter_sql = " AND date LIKE ?"
+        date_filter_params = [f"{current_month}%"]
+
+    # Base WHERE clause for user expenses
+    base_where = "WHERE user_id = ?"
+    base_params = (user_id,)
+
+    try:
+        # Get total spending (filtered)
+        cursor.execute(
+            f"SELECT COALESCE(SUM(amount), 0) FROM expenses {base_where} {date_filter_sql}",
+            base_params + tuple(date_filter_params)
+        )
         total_spent = cursor.fetchone()[0]
 
-        # Get transaction count
-        cursor.execute("SELECT COUNT(*) FROM expenses WHERE user_id = ?", (user_id,))
+        # Get transaction count (filtered)
+        cursor.execute(
+            f"SELECT COUNT(*) FROM expenses {base_where} {date_filter_sql}",
+            base_params + tuple(date_filter_params)
+        )
         expense_count = cursor.fetchone()[0]
 
-        # Get category breakdown
+        # Get category breakdown (filtered)
         cursor.execute(
-            "SELECT category, SUM(amount) as total FROM expenses WHERE user_id = ? GROUP BY category ORDER BY total DESC",
-            (user_id,)
+            f"SELECT category, SUM(amount) as total FROM expenses {base_where} {date_filter_sql} GROUP BY category ORDER BY total DESC",
+            base_params + tuple(date_filter_params)
         )
         categories_raw = cursor.fetchall()
 
@@ -166,14 +248,12 @@ def profile():
                 "percentage": round(percentage)
             })
 
-        # Get this month's spending
-        from datetime import datetime
-        current_month = datetime.now().strftime("%Y-%m")
+        # Get period spending (filtered - same as total_spent when filter active)
         cursor.execute(
-            "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND date LIKE ?",
-            (user_id, f"{current_month}%")
+            f"SELECT COALESCE(SUM(amount), 0) FROM expenses {base_where} {date_filter_sql}",
+            base_params + tuple(date_filter_params)
         )
-        this_month = cursor.fetchone()[0]
+        period_total = cursor.fetchone()[0]
 
     finally:
         conn.close()
@@ -184,7 +264,11 @@ def profile():
         total_spent=total_spent,
         expense_count=expense_count,
         categories=categories,
-        this_month=this_month
+        this_month=period_total,
+        filter_active=filter_active,
+        start_date=start_date,
+        end_date=end_date,
+        period_label=period_label
     )
 
 
