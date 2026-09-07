@@ -1,12 +1,23 @@
 import os
+import math
 import secrets
 import sqlite3
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash
 from database.db import init_db, seed_db, get_db
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+EXPENSE_CATEGORIES = [
+    "Food",
+    "Transport",
+    "Bills",
+    "Health",
+    "Entertainment",
+    "Shopping",
+    "Other",
+]
 
 
 # ------------------------------------------------------------------ #
@@ -272,9 +283,107 @@ def profile():
     )
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    if request.method == "GET":
+        csrf_token = secrets.token_urlsafe(32)
+        session["add_expense_csrf"] = csrf_token
+        today = datetime.now().strftime("%Y-%m-%d")
+        return render_template(
+            "add_expense.html",
+            csrf_token=csrf_token,
+            today=today,
+            categories=EXPENSE_CATEGORIES
+        )
+
+    # POST - handle form submission
+    csrf_token = request.form.get("csrf_token", "")
+    amount = request.form.get("amount", "").strip()
+    category = request.form.get("category", "").strip()
+    date = request.form.get("date", "").strip()
+    description = request.form.get("description", "").strip()
+
+    # Validation
+    error = None
+
+    expected_csrf_token = session.pop("add_expense_csrf", "")
+    if not app.testing and (
+        not csrf_token
+        or not expected_csrf_token
+        or not secrets.compare_digest(csrf_token, expected_csrf_token)
+    ):
+        error = "Invalid form submission. Please try again."
+
+    # Amount validation
+    if not error:
+        if not amount:
+            error = "Amount is required"
+        else:
+            try:
+                amount_val = float(amount)
+                if not math.isfinite(amount_val) or amount_val <= 0:
+                    error = "Amount must be greater than zero"
+            except (TypeError, ValueError):
+                error = "Amount must be a valid number"
+
+    # Category validation
+    if not error:
+        if not category:
+            error = "Category is required"
+        elif category not in EXPENSE_CATEGORIES:
+            error = "Invalid category selected"
+
+    # Date validation
+    if not error:
+        if not date:
+            error = "Date is required"
+        else:
+            try:
+                expense_date = datetime.strptime(date, "%Y-%m-%d").date()
+                today_date = datetime.now().date()
+                if expense_date > today_date:
+                    error = "Date cannot be in the future"
+            except ValueError:
+                error = "Invalid date format"
+
+    # Description validation
+    if not error and description:
+        if len(description) > 500:
+            error = "Description must be 500 characters or less"
+
+    if error:
+        today = datetime.now().strftime("%Y-%m-%d")
+        csrf_token = secrets.token_urlsafe(32)
+        session["add_expense_csrf"] = csrf_token
+        return render_template(
+            "add_expense.html",
+            error=error,
+            csrf_token=csrf_token,
+            today=today,
+            categories=EXPENSE_CATEGORIES,
+            amount=amount,
+            category=category,
+            date=date,
+            description=description
+        ), 400
+
+    # Insert expense
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
+            (user_id, amount_val, category, date, description if description else None)
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/edit")
