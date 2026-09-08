@@ -852,6 +852,26 @@ a { color: inherit; text-decoration: none; }
     font-size: 0.8rem;
 }
 
+.expense-delete {
+    display: inline-block;
+    margin: 0;
+}
+
+.btn-delete {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.8rem;
+    color: var(--danger);
+    border-color: var(--danger-light);
+    background: var(--danger-light);
+    cursor: pointer;
+}
+
+.btn-delete:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: var(--paper);
+}
+
 .profile-empty {
     text-align: center;
     padding: 3rem 2rem;

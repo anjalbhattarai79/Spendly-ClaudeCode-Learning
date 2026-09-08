@@ -156,6 +156,10 @@ def profile():
     if not user_id:
         return redirect(url_for("login"))
 
+    # CSRF token for the inline delete forms
+    delete_expense_csrf = secrets.token_urlsafe(32)
+    session["delete_expense_csrf"] = delete_expense_csrf
+
     conn = get_db()
     cursor = conn.cursor()
 
@@ -206,6 +210,7 @@ def profile():
                     end_date=end_date,
                     period_label="This Month",
                     error="Invalid date format. Use YYYY-MM-DD.",
+                    delete_expense_csrf=delete_expense_csrf,
                 ),
                 400,
             )
@@ -227,6 +232,7 @@ def profile():
                     end_date=end_date,
                     period_label="This Month",
                     error="Start date must be before or equal to end date.",
+                    delete_expense_csrf=delete_expense_csrf,
                 ),
                 400,
             )
@@ -317,6 +323,7 @@ def profile():
         start_date=start_date,
         end_date=end_date,
         period_label=period_label,
+        delete_expense_csrf=delete_expense_csrf,
     )
 
 
@@ -554,9 +561,37 @@ def edit_expense(id):
     return redirect(url_for("profile"))
 
 
-@app.route("/expenses/<int:id>/delete")
+@app.route("/expenses/<int:id>/delete", methods=["POST"])
 def delete_expense(id):
-    return "Delete expense — coming in Step 9"
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    # Validate CSRF token
+    csrf_token = request.form.get("csrf_token", "")
+    expected_csrf_token = session.get("delete_expense_csrf", "")
+    if not app.testing and (
+        not csrf_token
+        or not expected_csrf_token
+        or not secrets.compare_digest(csrf_token, expected_csrf_token)
+    ):
+        return "Invalid form submission. Please try again.", 400
+
+    # Delete only if the expense belongs to the logged-in user
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "DELETE FROM expenses WHERE id = ? AND user_id = ?", (id, user_id)
+        )
+        if cursor.rowcount == 0:
+            conn.close()
+            abort(404)
+        conn.commit()
+    finally:
+        conn.close()
+
+    return redirect(url_for("profile"))
 
 
 if __name__ == "__main__":
