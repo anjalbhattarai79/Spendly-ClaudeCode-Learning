@@ -50,18 +50,19 @@ pytest tests/test_specific.py -v
 | `/` | GET | ✅ Done | `landing.html` |
 | `/register` | GET/POST | ✅ Done | `register.html` |
 | `/login` | GET/POST | ✅ Done | `login.html` |
-| `/logout` | GET | 🔲 Placeholder | — |
-| `/profile` | GET | 🔲 Placeholder | — |
-| `/expenses/add` | GET/POST | 🔲 Placeholder | — |
-| `/expenses/<id>/edit` | GET/POST | 🔲 Placeholder | — |
-| `/expenses/<id>/delete` | POST | 🔲 Placeholder | — |
+| `/logout` | GET | ✅ Done | — |
+| `/profile` | GET | ✅ Done | `profile.html` |
+| `/expenses/add` | GET/POST | ✅ Done | `add_expense.html` |
+| `/expenses/<id>/edit` | GET/POST | ✅ Done | `edit_expense.html` |
+| `/expenses/<id>/delete` | POST | ✅ Done | — |
+| `/terms` | GET | ✅ Done | `terms.html` |
+| `/privacy` | GET | ✅ Done | `privacy.html` |
 
-## Database Schema (to implement in `database/db.py`)
+## Database Schema (implemented in `database/db.py`)
 
-Based on the forms and placeholder routes, the schema will need:
 - **users** table (id, name, email, password_hash, created_at)
-- **expenses** table (id, user_id, category, amount, date, description, created_at)
-- **categories** table (id, name, icon, color) — optional, for predefined categories
+- **expenses** table (id, user_id, category, amount, date, description, created_at) — `user_id` has `ON DELETE CASCADE`
+- No `categories` table — the predefined category list lives as `EXPENSE_CATEGORIES` in `app.py`
 
 ## CSS Design System
 
@@ -72,13 +73,18 @@ The stylesheet (`static/css/style.css`) uses CSS custom properties for:
 
 All components use these variables — no hardcoded values.
 
-## Next Steps (Tutorial Progression)
+## Tutorial Progression (Complete ✅)
 
-1. **Step 1**: Implement `database/db.py` with SQLite connection, table creation, seeding
-2. **Step 2**: Add auth logic to `/register` and `/login` routes (hash passwords, sessions)
-3. **Step 3**: Implement `/logout`
-4. **Step 4**: Build `/profile` page
-5. **Steps 7-9**: CRUD for expenses (add, edit, delete)
+1. **Step 1** — `database/db.py`: SQLite connection, table creation, seeding
+2. **Step 2** — Auth logic for `/register` and `/login` (hash passwords, sessions)
+3. **Step 3** — `/logout`
+4. **Step 4** — `/profile` page
+5. **Step 5** — Date filtering on `/profile`
+6. **Step 6** — Add expense (`/expenses/add`)
+7. **Step 7** — Edit expense (`/expenses/<id>/edit`)
+8. **Step 8** — Delete expense (`/expenses/<id>/delete`)
+
+The project is feature-complete: full expense CRUD, session auth, CSRF protection, and a profile dashboard with category breakdowns and date filtering.
 
 ## Notes for Future Work
 
